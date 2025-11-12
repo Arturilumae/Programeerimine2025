@@ -13,7 +13,7 @@ def read_excel_data(aine):
 
     # 12-17 rida, veerud B, C, D -> hinded ja punktid
     hinded = df.iloc[11:17, 1].tolist()     # veerg B
-    hinded_vordlus = df.iloc[11:17, 2].tolist()  # veerg C
+    hinded_vordlus = df.iloc[11:17, 2].tolist()  # veerg C 
     punktid_hindeks = df.iloc[11:17, 3].tolist() # veerg D
     # tagasta tulemusi
     return alim_punktid, maks_punktid, aine_max, hinded, hinded_vordlus, punktid_hindeks
