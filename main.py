@@ -7,6 +7,7 @@ subjects = [
     "Arvuti arhitektuur ja riistvara",
     "Operatsioonisüsteemid",
     "Kõrgem Matemaatika 1",
+
     "Sissejuhatus erialasse"
 ]
 
@@ -15,6 +16,7 @@ for i, subj in enumerate(subjects, 1):
 
 choice = int(input("Vali õppeaine number: "))
 subject = subjects[choice - 1]
+
 alam_punktid, maks_punktid, aine_max, hinded, hinded_vordlus, punktid_hindeks = fn.aine(subject) # Andmed tapelist
 print(f"Õppeaine: {subject}")
 count = int(input("Mitu hinnet soovid sisestada? "))
