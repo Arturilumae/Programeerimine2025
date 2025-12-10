@@ -1,7 +1,7 @@
 import funktsioonid as fn # kus kõik funktsioonid on 
 
 grades = { #ainete määramine
-    "Programeerimine 1": {},
+    "Programmeerimine 1": {},
     "AAR 1": {},
     "Opsys": {},
     "KÕM 1": {},
@@ -14,7 +14,7 @@ subjects = { #ainete määraine
     "Kõrgem matemaatika 1": "KÕM 1",
     "Sissejuhatus erialasse": "Sissejuhatus erialasse"
 }
-käsud = ["Sisesta punktid", "Arvuta hinne #Pole valmis", "Salvesta andmed #Pole valmis", "Loe salvestatud andmed #Pole valmis", "Välju"]
+käsud = ["Sisesta punktid", "Arvuta hinne #Pole valmis", "Loe salvestatud andmed", "Välju"]
 
 subject_list = list(subjects.keys())
 
@@ -24,8 +24,8 @@ load_choice = input().strip().lower()
 if load_choice == "jah":
     saved_data = fn.get_local_data()
     if saved_data:
+        grades = saved_data
         print("Andmed leitud ja laetud.")
-        print(saved_data)
     else:
         print("Eelnevaid andmeid ei leitud.")
 print()
@@ -33,37 +33,43 @@ print()
 
 while True: #Põhiprogramm
     print("Mida teha soovid?")
-    for i in käsud:
-        print(f"- {i}")
-    cmd_choice = input("Sisesta käsk: ").strip().lower()
-
-    if cmd_choice != "välju":
-        print("Mis õppeainel: ")
-        for i, subj in enumerate(subject_list, 1): #aine küsimine
-            print(f"{i}. {subj}")
-        while True:
-            choice = int(input("Sisesta õppeaine number: "))
-            if 1 <= choice <= len(subject_list):
-                subject_key = subject_list[choice - 1]
-                subject = subjects[subject_key]
-                print(f"Valisid: {subject_key}")
+    while True: #käskluse küsimine
+        j=1
+        for i in käsud:
+            print(f"- {i}: {j}")
+            j+=1
+        try:
+            cmd_choice = int(input("Sisesta käsu number: ").strip())
+            if 1 <= cmd_choice <= len(käsud):
+                cmd_choice = käsud[cmd_choice - 1].lower()
                 break
             else:
-                print("Vale valik!")
+                print(f"Valik on 1-{j}.")
+                continue
+        except ValueError:
+            cmd_choice = input("Sisesta käsu number: ").strip().lower()
+            if cmd_choice in [k.lower() for k in käsud]:
+                break
+            else:               
+                print(f"Palun sisesta kehtiv käsk.")
+                continue 
     print()
-    alampiirid, max_punktid, hinded, punktid_hindeks = fn.aine_exel(subject) # Andmed tapelist
     match cmd_choice:
         case "sisesta punktid":
-                if 'saved_data' in locals():
-                    print("Kas tahad uuendada oma punkte või alustada algusest? (uuenda/algus)")
-                    update_choice = input().strip().lower()
-                    if update_choice == "uuenda":
-                        # Kutsu `küsi_punktid`, edastades olemasolevad salvestatud andmed
-                        grades[subject] = fn.küsi_punktid(max_punktid[0], saved_data.get(subject))
-                    else:
-                        grades[subject] = fn.küsi_punktid(max_punktid[0])
+            subject = fn.õppe_aine(subject_list,subjects)
+            alampiirid, max_punktid, hinded, punktid_hindeks = fn.aine_exel(subject) # Andmed tapelist
+            if 'saved_data' in locals() and saved_data != None:
+                print("Kas tahad uuendada oma punkte või alustada algusest? (uuenda/algus)")
+                update_choice = input().strip().lower()
+                if update_choice == "uuenda":
+                    # Kutsu `küsi_punktid`, edastades olemasolevad salvestatud andmed
+                    grades[subject] = fn.küsi_punktid(max_punktid[0], grades.get(subject))
                 else:
                     grades[subject] = fn.küsi_punktid(max_punktid[0])
+            else:
+                grades[subject] = fn.küsi_punktid(max_punktid[0])
+        case "loe salvestatud andmed":
+            fn.kuva_andmed(grades)
         case "välju":
             print("Programm lõpetab töö.")
             print("Kas tahand andmed salvestada? (jah/ei)")
@@ -72,4 +78,3 @@ while True: #Põhiprogramm
                 fn.local_save(grades)
                 print("Andmed salvestatud.")
             break
-

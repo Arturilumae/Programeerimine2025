@@ -12,6 +12,8 @@ def aine_exel(aine):
         if cell == "UUS": #kui tuleb "UUS", siis alustan uut katekooriat
             alampiir = dict(zip(df.iloc[j:i, 0], df.iloc[j:i, 1])) #Veerg B
             max_punktid = dict(zip(df.iloc[j:i, 0], df.iloc[j:i, 2])) #veerg C
+            alampiir = {k: v for k, v in alampiir.items() if k == k}  # k==k on tõsi ainult kui k ei ole NaN
+            max_punktid = {k: v for k, v in max_punktid.items() if k == k}
             kõik_alampiirid.append(alampiir)
             kõik_max_punktid.append(max_punktid)
             kõik_max_punktid.append("UUS")
@@ -21,6 +23,8 @@ def aine_exel(aine):
     if j < len(df): #viimase plokki lisamine
         alampiir = dict(zip(df.iloc[j:, 0], df.iloc[j:, 1]))
         max_punktid = dict(zip(df.iloc[j:, 0], df.iloc[j:, 2]))
+        alampiir = {k: v for k, v in alampiir.items() if k == k}  # k==k on tõsi ainult kui k ei ole NaN
+        max_punktid = {k: v for k, v in max_punktid.items() if k == k}
         kõik_alampiirid.append(alampiir) #ühtemassiivi lisamine
         kõik_max_punktid.append(max_punktid) #ühtemassiivi lisamine
 
@@ -32,16 +36,16 @@ def aine_exel(aine):
     return kõik_alampiirid, kõik_max_punktid, hinded, punktid_hindeks
 
 
-def local_save(data, location=""):
-    location = location + "Kasutaja_hinded.json"
+def local_save(data, location="Desktop"): #<-- Muuda asukohta vastavalt vajadusele kuhu salvestada
+    location = os.path.join(os.path.expanduser("~"), location+"/Kasutaja_hinded.json")
     if not os.path.exists(location):
         with open(location, 'w', encoding='utf-8') as f:
             f.write("{}")
     with open(location, 'w', encoding='utf-8') as f:
         js.dump(data, f, ensure_ascii=False, indent=4)
 
-def get_local_data(location=""):
-    location = location + "Kasutaja_hinded.json"
+def get_local_data(location="Desktop"):#<-- Muuda asukohta vastavalt vajadusele kuhu salvestada
+    location = os.path.join(os.path.expanduser("~"), location+"/Kasutaja_hinded.json")
     if os.path.exists(location) == False:
         return None
     with open(location, 'r', encoding='utf-8') as f:
@@ -120,9 +124,39 @@ def arvuta_hinne(kokku_punkte, punktid_hindeks, hinded):
             break
     return saadud_hinne
 
-"""
+def kuva_andmed(grades):
+    for aine, kategooriad in grades.items():
+        print(f"\nAine: {aine}")
+        for kategooria, punktid in kategooriad.items():
+            if kategooria == "UUS":
+                print("  Uus kategooria, andmed puuduvad.")
+                continue
+            print(f"  Kategooria: {kategooria}")
+            for i, punkt in enumerate(punktid, 1):
+                if punkt is None:
+                    print(f"    Ülesanne {i}: Puudub")
+                else:
+                    print(f"    Ülesanne {i}: {punkt} punkti")
+
+def õppe_aine(subject_list,subjects):
+    print("Mis õppeainel: ")
+    for i, subj in enumerate(subject_list, 1): #aine küsimine
+        print(f"{i}. {subj}")
+    while True:
+        choice = int(input("Sisesta õppeaine number: "))
+        if 1 <= choice <= len(subject_list):
+            subject_key = subject_list[choice - 1]
+            subject = subjects[subject_key]
+            print(f"Valisid: {subject_key}")
+            break
+        else:
+            print(f"Palun vali number 1-{len(subject_list)}.")
+            continue
+    return subject
+
+""" Näide andmetest
 andemd = {
-    "Programeerimine 1": {
+    "Programmeerimine 1": {
         "testid":[1, 0, 0.5, 0.25],
         "kodutöö": [2, 1, 0.5, 3],
         "praktikum": "-",
@@ -139,5 +173,4 @@ andemd = {
     }
 }
 
-local_save(andemd)
 """
