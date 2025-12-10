@@ -73,27 +73,3 @@ while True: #Põhiprogramm
                 print("Andmed salvestatud.")
             break
 
-"""
-grades = fn.küsi_punktid(max_punktid[0])  # Preagu kasutame esimest katekooriat   !!!NB HILJEM MUUTA
-
-kokku_punkte = sum(p for p in grades.values() if p is not None)
-
-saadud_hinne = fn.arvuta_hinne(kokku_punkte, punktid_hindeks, hinded)
-
-print(f"Sinu hinne ja punktid hetkel on: {saadud_hinne} ja {kokku_punkte} punkti.")
-
-
-print("Nüüd vali õppeaine: ")
-for i, subj in enumerate(subject_list, 1): #aine küsimine
-    print(f"{i}. {subj}")
-
-choice = int(input("Sisesta õppeaine number: "))
-if 1 <= choice <= len(subject_list):
-    subject_key = subject_list[choice - 1]
-    subject = subjects[subject_key]
-    print(f"Valisid: {subject_key}")
-else:
-    print("Vale valik!")
-print()
-alampiirid, max_punktid, hinded, punktid_hindeks = fn.aine_e(subject) # Andmed tapelist
-"""
