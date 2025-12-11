@@ -38,16 +38,18 @@ while True: #Põhiprogramm
         for i in käsud:
             print(f"- {i}: {j}")
             j+=1
+        cmd_choice = (input("Sisesta käsu number: ").strip())
         try:
-            cmd_choice = int(input("Sisesta käsu number: ").strip())
+            cmd_choice = int(cmd_choice)
             if 1 <= cmd_choice <= len(käsud):
                 cmd_choice = käsud[cmd_choice - 1].lower()
                 break
             else:
+                print("Mitte sobiv valik.")
                 print(f"Valik on 1-{j}.")
                 continue
         except ValueError:
-            cmd_choice = input("Sisesta käsu number: ").strip().lower()
+            cmd_choice = cmd_choice.lower()
             if cmd_choice in [k.lower() for k in käsud]:
                 break
             else:               
@@ -70,6 +72,10 @@ while True: #Põhiprogramm
                 grades[subject] = fn.küsi_punktid(max_punktid[0])
         case "loe salvestatud andmed":
             fn.kuva_andmed(grades)
+        case "arvuta hinne #pole valmis":
+            subject = fn.õppe_aine(subject_list,subjects)
+            alampiirid, max_punktid, hinded, punktid_hindeks = fn.aine_exel(subject) # Andmed tapelist
+            fn.arvuta_hinne(grades[subject], alampiirid, punktid_hindeks, hinded, max_punktid)
         case "välju":
             print("Programm lõpetab töö.")
             print("Kas tahand andmed salvestada? (jah/ei)")

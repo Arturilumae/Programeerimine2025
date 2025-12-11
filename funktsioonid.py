@@ -16,8 +16,6 @@ def aine_exel(aine):
             max_punktid = {k: v for k, v in max_punktid.items() if k == k}
             kõik_alampiirid.append(alampiir)
             kõik_max_punktid.append(max_punktid)
-            kõik_max_punktid.append("UUS")
-            kõik_alampiirid.append("UUS")
             j = i+1
             continue
     if j < len(df): #viimase plokki lisamine
@@ -113,16 +111,69 @@ def küsi_punktid(max_punktid,andmed=None):
                     x+=1
     return grades
 
-def arvuta_hinne(kokku_punkte, punktid_hindeks, hinded):
-    for i in range(len(hinded)):
-        if i != len(hinded) - 1:
-            if kokku_punkte < punktid_hindeks[i]:
-                saadud_hinne = hinded[i + 1]
-                break
-        elif kokku_punkte >= punktid_hindeks[i]:
-            saadud_hinne = hinded[i]
-            break
-    return saadud_hinne
+def arvuta_hinne(grades, alampiir, punktid_hindeks, hinded, max_punktid): # Lisada täielik hinnde arvutus
+    choice = input("Kas soovid kokkuvõtvad või täielikku ülevaadet (kokk/täie): ").strip().lower()
+    if choice == "kokk":
+        kokku_punkte = 0
+        läbitud = True
+        läbikukkudud = {}
+        for i in grades.keys(): #iga kategooria kohta
+            punkti_kontroll = 0
+            for j in grades[i]:
+                if j != None:
+                    kokku_punkte += j
+                    punkti_kontroll += j
+            if punkti_kontroll < alampiir[0][i] and len(alampiir) == 1:
+                läbitud = False
+                print(f"Kategoorias '{i}' ei ole saavutatud minimaalset punktide arvu, sull on {punkti_kontroll} vaja on {alampiir[0][i]}.")
+            elif len(alampiir) > 1: #kui on mitu alampiiri
+                läbikukkudud = {i: []}
+                for j in range(len(alampiir)):
+                    if punkti_kontroll < alampiir[j][i]:
+                        läbitud = False
+                        läbikukkudud[i].append([alampiir[j][i], False, punkti_kontroll])
+                    elif punkti_kontroll >= alampiir[j][i]:
+                        läbikukkudud[i].append([alampiir[j][i], True])
+                                      
+        saadud_hinne = None
+        if len(alampiir) == 1:
+            for i in range(len(hinded)):
+                if i != len(hinded) - 1:
+                    if kokku_punkte < punktid_hindeks[i]:
+                        saadud_hinne = hinded[i + 1]
+                        break
+                elif kokku_punkte >= punktid_hindeks[i]:
+                    saadud_hinne = hinded[i]
+                    break
+        else:
+            tulemus = []
+            for i in range(len(next(iter(läbikukkudud.values())))):
+                for j in läbikukkudud.keys():
+                    if läbikukkudud[j][i][1] == False:
+                        tulemus.append(False)
+                        break
+            if True not in tulemus: #kui kõik alampiirid on false
+                print(f"Selles aines on mittu võimalikut alampiiri.")
+                for i in range(len(next(iter(läbikukkudud.values())))):
+                    print(f"Võimalik alampiir {i+1}:")
+                    for j in läbikukkudud.keys():
+                        print(f"  Kategooria '{j}': vaja {läbikukkudud[j][i][0]} punkti, said {round(läbikukkudud[j][i][2],2)} punkti.")
+                läbitud = False
+            for i in range(len(hinded)):
+                if i != len(hinded) - 1:
+                    if kokku_punkte < punktid_hindeks[i]:
+                        saadud_hinne = hinded[i + 1]
+                        break
+                elif kokku_punkte >= punktid_hindeks[i]:
+                    saadud_hinne = hinded[i]
+                    break
+        
+        if läbitud:
+            print(f"Kokku on punkte: {round(kokku_punkte,2)}\nSaadud hinne {saadud_hinne}.")
+        else:
+            print(f"Kokku saaksid punkte: {round(kokku_punkte, 2)}. Millega saaksid {saadud_hinne}.\nAga kuna ülaltoodud aine/ainede alampiir pole läbitud on hinne F.")
+    elif choice == "täie":
+        print("Täielik ülevaade pole veel valmis.")
 
 def kuva_andmed(grades):
     for aine, kategooriad in grades.items():
