@@ -1,3 +1,19 @@
+"""
+Programm: Hinnete analüüsimise programm
+Autorid: Artur Ilumäe ja Hannela Haavel
+
+Kasutatavad allikad:
+- Real Python Tkinter tutoriaals: https://realpython.com/python-gui-tkinter/
+- Pandas Excel töötlemine: https://pandas.pydata.org/docs/
+- Python JSON moodul: https://docs.python.org/3/library/json.html
+
+Programm töötamiseks peab pyhon olema installitud koos pandas ja openpyxl teekidega.
+
+programm käivitamiseks:
+python main.py
+
+"""
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 import tkinter.font as tkfont
@@ -26,23 +42,23 @@ class App(tk.Tk):
             self.salvestatud_andmed = {}
 
         # UI elements
-        top = tk.Frame(self)
-        top.pack(fill=tk.X, padx=10, pady=8)
+        üla_raam = tk.Frame(self)
+        üla_raam.pack(fill=tk.X, padx=10, pady=8)
 
-        tk.Label(top, text="Vali aine:").pack(side=tk.LEFT)
+        tk.Label(üla_raam, text="Vali aine:").pack(side=tk.LEFT)
         self.aine_muutuja = tk.StringVar()
         ainete_nimistik = list(AINED.keys())
-        self.aine_menu = ttk.Combobox(top, values=ainete_nimistik, state='readonly', width=30)
+        self.aine_menu = ttk.Combobox(üla_raam, values=ainete_nimistik, state='readonly', width=30)
         self.aine_menu.current(0)
         self.aine_menu.pack(side=tk.LEFT, padx=6)
 
-        btn_frame = tk.Frame(top)
-        btn_frame.pack(side=tk.RIGHT)
+        nuppude_raam = tk.Frame(üla_raam)
+        nuppude_raam.pack(side=tk.RIGHT)
 
-        tk.Button(btn_frame, text="Sisesta punktid", command=self.ava_punktide_sisestus).pack(side=tk.LEFT, padx=4)
-        tk.Button(btn_frame, text="Arvuta hinne", command=self.arvuta_hinne_kuva).pack(side=tk.LEFT, padx=4)
-        tk.Button(btn_frame, text="Loe salvestatud andmed", command=self.kuva_salvestatud).pack(side=tk.LEFT, padx=4)
-        tk.Button(btn_frame, text="Salvesta andmed", command=self.salvesta_kõik).pack(side=tk.LEFT, padx=4)
+        tk.Button(nuppude_raam, text="Sisesta punktid", command=self.ava_punktide_sisestus).pack(side=tk.LEFT, padx=4)
+        tk.Button(nuppude_raam, text="Arvuta hinne", command=self.arvuta_hinne_kuva).pack(side=tk.LEFT, padx=4)
+        tk.Button(nuppude_raam, text="Loe salvestatud andmed", command=self.kuva_salvestatud).pack(side=tk.LEFT, padx=4)
+        tk.Button(nuppude_raam, text="Salvesta andmed", command=self.salvesta_kõik).pack(side=tk.LEFT, padx=4)
 
         # Põhisisu ala
         self.sisu = tk.Frame(self)
@@ -111,39 +127,14 @@ class App(tk.Tk):
         self.config(menu=menüüriba)
 
     def salvesta_punktid(self, aine):
-        # ehita aine punktide struktuur
-        aine_punktid = {}
-        for k, (muutuja, maks) in self.sisend_muutujad.items():
-            tekst = muutuja.get().strip()
-            if tekst == "":
-                aine_punktid[k] = None
-                continue
-            # analüüsi komadega eraldatud numbrid
-            osad = [i.strip() for i in tekst.split(',') if i.strip() != ""]
-            väärtused = []
-            summa = 0
-            kehtiv = True
-            for i in osad:
-                try:
-                    v = float(i)
-                    if v < 0:
-                        kehtiv = False
-                        break
-                    summa += v
-                    väärtused.append(v)
-                except ValueError:
-                    kehtiv = False
-                    break
-            if not kehtiv or summa > maks:
-                messagebox.showerror("Viga", f"Kehtetud väärtused kategoorias {k} või summa ületab maksi ({maks}).")
-                return
-            aine_punktid[k] = väärtused
-
-        # salvesta salvestatud_andmete sisse ja säilita
-        self.salvestatud_andmed.setdefault(aine, {})
-        self.salvestatud_andmed[aine].update(aine_punktid)
-        fn.salvesta_kohalikult(self.salvestatud_andmed)
-
+        # kutsub helper-funktsiooni funktsioonid.py-st
+        edukus, sõnum, uuendatud_andmed = fn.valideeri_ja_salvesta_aine_punktid(aine, self.sisend_muutujad, self.salvestatud_andmed)
+        if not edukus:
+            messagebox.showerror("Viga", sõnum)
+            return
+        
+        # värskenda salvestatud andmed
+        self.salvestatud_andmed = uuendatud_andmed
         messagebox.showinfo("Salvestatud", f"Punktid salvestatud ainele {aine}.")
         
         # puhasta kategooria raam (menüü kaob ära)
@@ -153,14 +144,15 @@ class App(tk.Tk):
 
     def kuva_salvestatud(self):
         self.väljund.delete('1.0', tk.END)
-        if not self.salvestatud_andmed:
-            self.väljund.insert(tk.END, "Salvestatud andmed puuduvad.\n")
+        aine = self.leia_aine_võti()
+        if not aine:
+            messagebox.showerror("Viga", "Palun vali aine.")
             return
-        for aine, kateg in self.salvestatud_andmed.items():
-            self.väljund.insert(tk.END, f"Aine: {aine}\n")
-            for k, v in kateg.items():
-                self.väljund.insert(tk.END, f"  {k}: {v}\n")
-            self.väljund.insert(tk.END, "\n")
+        
+        # kutsub helper-funktsiooni
+        edukas, tekst = fn.kuvamiseks_valmis_andmed(aine, self.salvestatud_andmed)
+        self.väljund.insert(tk.END, tekst)
+        
 
     def salvesta_kõik(self):
         fn.salvesta_kohalikult(self.salvestatud_andmed)
@@ -177,16 +169,15 @@ class App(tk.Tk):
             messagebox.showerror("Viga", "Punktid selle aine jaoks puuduvad. Sisesta punktid enne arvutamist.")
             return
         try:
-            # kutsu arvuta_hinne et kuvada tulemused
-            fn.arvuta_hinne_gui(aine_punktid, alampiirid, punktid_hindeks, hinded, self, tk)
-            # arvuta ka kokku punkte
+            # kutsu arvuta_hinne et kuvada tulemused (edasta väljund-widget)
+            fn.arvuta_hinne_gui(aine_punktid, alampiirid, punktid_hindeks, hinded, väljund=self.väljund)
+            # arvuta ka kokku punkte ja lisa kokkuvõte ilma eelmist väljundit kustutamata
             kokku_punkte = 0
-            for k, väärtused in aine_punktid.items():
+            for väärtused in aine_punktid.values():
                 if isinstance(väärtused, list):
                     for v in väärtused:
                         if v is not None:
                             kokku_punkte += v
-            self.väljund.delete('1.0', tk.END)
             self.väljund.insert(tk.END, f"Kokku punkte: {round(kokku_punkte,2)}\n")
             self.väljund.insert(tk.END, "Vaata täpsemat tulemust konsoolist (arvutus logitakse sinna).\n")
         except Exception as e:
