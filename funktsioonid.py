@@ -2,7 +2,8 @@ import pandas as pd
 import json as js
 import os
 
-def aine_exel(aine):
+
+def loe_aine_fail(aine):
     df = pd.read_excel("andmed.xlsx", sheet_name=aine, header=None)  # header=None, et saaks read indekseerida
     kõik_alampiirid, alampiir, kõik_max_punktid, max_punktid = [],[],[],[]
 
@@ -34,7 +35,7 @@ def aine_exel(aine):
     return kõik_alampiirid, kõik_max_punktid, hinded, punktid_hindeks
 
 
-def local_save(data, location="Desktop"): #<-- Muuda asukohta vastavalt vajadusele kuhu salvestada
+def salvesta_kohalikult(data, location="Desktop"): #<-- Muuda asukohta vastavalt vajadusele kuhu salvestada
     location = os.path.join(os.path.expanduser("~"), location+"/Kasutaja_hinded.json")
     if not os.path.exists(location):
         with open(location, 'w', encoding='utf-8') as f:
@@ -42,7 +43,7 @@ def local_save(data, location="Desktop"): #<-- Muuda asukohta vastavalt vajaduse
     with open(location, 'w', encoding='utf-8') as f:
         js.dump(data, f, ensure_ascii=False, indent=4)
 
-def get_local_data(location="Desktop"):#<-- Muuda asukohta vastavalt vajadusele kuhu salvestada
+def loe_kohalikud_andmed(location="Desktop"):#<-- Muuda asukohta vastavalt vajadusele kuhu salvestada
     location = os.path.join(os.path.expanduser("~"), location+"/Kasutaja_hinded.json")
     if os.path.exists(location) == False:
         return None
@@ -111,69 +112,79 @@ def küsi_punktid(max_punktid,andmed=None):
                     x+=1
     return grades
 
-def arvuta_hinne(grades, alampiir, punktid_hindeks, hinded, max_punktid): # Lisada täielik hinnde arvutus
-    choice = input("Kas soovid kokkuvõtvad või täielikku ülevaadet (kokk/täie): ").strip().lower()
-    if choice == "kokk":
+def arvuta_hinne_gui(grades, alampiir, punktid_hindeks, hinded, self, tk): # Lisada täielik hinnde arvutus
+    try:
+        # mode: "kokk" for summary, "täie" for full. When called from GUI, pass mode explicitly.
         kokku_punkte = 0
         läbitud = True
         läbikukkudud = {}
         for i in grades.keys(): #iga kategooria kohta
             punkti_kontroll = 0
-            for j in grades[i]:
-                if j != None:
-                    kokku_punkte += j
-                    punkti_kontroll += j
-            if punkti_kontroll < alampiir[0][i] and len(alampiir) == 1:
-                läbitud = False
-                print(f"Kategoorias '{i}' ei ole saavutatud minimaalset punktide arvu, sull on {punkti_kontroll} vaja on {alampiir[0][i]}.")
-            elif len(alampiir) > 1: #kui on mitu alampiiri
-                läbikukkudud = {i: []}
+            vals_for_cat = grades.get(i)
+            if not vals_for_cat:
+                vals_iter = []
+            else:
+                vals_iter = vals_for_cat
+
+            # sum up points for this category
+            for v in vals_iter:
+                if v is not None:
+                    kokku_punkte += v
+                    punkti_kontroll += v
+
+            # Determine minimal required points for this category (if present)
+            # alampiir is expected to be a list of dicts; find values safely
+            def get_req_from_block(block_idx):
+                try:
+                    block = alampiir[block_idx]
+                    if isinstance(block, dict):
+                        return block.get(i, None)
+                except Exception:
+                    pass
+                return None
+
+            # Single-block minimal check
+            req_single = get_req_from_block(0)
+            if req_single is not None and len(alampiir) == 1:
+                if punkti_kontroll < req_single:
+                    läbitud = False
+                    self.väljund.insert(tk.END, f"Kategoorias '{i}' ei ole saavutatud minimaalset punktide arvu, sull on {punkti_kontroll} vaja on {req_single}.\n")
+
+            # Multi-block minimal checks
+            if len(alampiir) > 1:
+                läbikukkudud.setdefault(i, [])
                 for j in range(len(alampiir)):
-                    if punkti_kontroll < alampiir[j][i]:
+                    req = get_req_from_block(j)
+                    if req is None:
+                        # if no requirement for this block, treat as passed
+                        läbikukkudud[i].append([None, True])
+                        continue
+                    if punkti_kontroll < req:
                         läbitud = False
-                        läbikukkudud[i].append([alampiir[j][i], False, punkti_kontroll])
-                    elif punkti_kontroll >= alampiir[j][i]:
-                        läbikukkudud[i].append([alampiir[j][i], True])
-                                      
+                        läbikukkudud[i].append([req, False, punkti_kontroll])
+                    else:
+                        läbikukkudud[i].append([req, True])
+                                        
         saadud_hinne = None
-        if len(alampiir) == 1:
-            for i in range(len(hinded)):
-                if i != len(hinded) - 1:
-                    if kokku_punkte < punktid_hindeks[i]:
-                        saadud_hinne = hinded[i + 1]
+        # Lihtsustatud versioon: arvuta hinne ainult kokku_punkte alusel
+        if len(hinded) > 0 and len(punktid_hindeks) > 0:
+            for idx in range(len(punktid_hindeks)):
+                if idx < len(hinded):
+                    if kokku_punkte >= punktid_hindeks[idx]:
+                        saadud_hinne = hinded[idx]
                         break
-                elif kokku_punkte >= punktid_hindeks[i]:
-                    saadud_hinne = hinded[i]
-                    break
-        else:
-            tulemus = []
-            for i in range(len(next(iter(läbikukkudud.values())))):
-                for j in läbikukkudud.keys():
-                    if läbikukkudud[j][i][1] == False:
-                        tulemus.append(False)
-                        break
-            if True not in tulemus: #kui kõik alampiirid on false
-                print(f"Selles aines on mittu võimalikut alampiiri.")
-                for i in range(len(next(iter(läbikukkudud.values())))):
-                    print(f"Võimalik alampiir {i+1}:")
-                    for j in läbikukkudud.keys():
-                        print(f"  Kategooria '{j}': vaja {läbikukkudud[j][i][0]} punkti, said {round(läbikukkudud[j][i][2],2)} punkti.")
-                läbitud = False
-            for i in range(len(hinded)):
-                if i != len(hinded) - 1:
-                    if kokku_punkte < punktid_hindeks[i]:
-                        saadud_hinne = hinded[i + 1]
-                        break
-                elif kokku_punkte >= punktid_hindeks[i]:
-                    saadud_hinne = hinded[i]
-                    break
+            # Kui hinne pole määratud, anna viimane hinne
+            if saadud_hinne is None and len(hinded) > 0:
+                saadud_hinne = hinded[-1]
         
         if läbitud:
-            print(f"Kokku on punkte: {round(kokku_punkte,2)}\nSaadud hinne {saadud_hinne}.")
+            self.väljund.insert(tk.END, f"Kokku on punkte: {round(kokku_punkte,2)}\nSaadud hinne {saadud_hinne}.\n")
         else:
-            print(f"Kokku saaksid punkte: {round(kokku_punkte, 2)}. Millega saaksid {saadud_hinne}.\nAga kuna ülaltoodud aine/ainede alampiir pole läbitud on hinne F.")
-    elif choice == "täie":
-        print("Täielik ülevaade pole veel valmis.")
+            self.väljund.insert(tk.END, f"Kokku saaksid punkte: {round(kokku_punkte, 2)}. Millega saaksid {saadud_hinne}.\nAga kuna ülaltoodud aine/ainede alampiir pole läbitud on hinne F.\n")
+    
+    except Exception as e:
+        self.väljund.insert(tk.END, f"Viga arvutamisel: {str(e)}\n")
+
 
 def kuva_andmed(grades):
     for aine, kategooriad in grades.items():
@@ -205,23 +216,3 @@ def õppe_aine(subject_list,subjects):
             continue
     return subject
 
-""" Näide andmetest
-andemd = {
-    "Programmeerimine 1": {
-        "testid":[1, 0, 0.5, 0.25],
-        "kodutöö": [2, 1, 0.5, 3],
-        "praktikum": "-",
-        "projekt": "-",
-        "1.kontrolltöö": 19,
-        "2.kontrolltöö": "-",
-        "Eksam": "-",
-        "Lisapunktid": [1,2]
-    },
-    "AAR 1": {
-        "kontrolltööd": [3, 10, 5, "-"],
-        "eksam": "-",
-        "praktikum": 90
-    }
-}
-
-"""
