@@ -1,6 +1,8 @@
 """"
 Programm: funktsioonid main programmi jaoks
 Autorid: Artur Ilumäe ja Hannela Haavel
+
+Rohkem info main.py failis
 """
 
 import pandas as pd
