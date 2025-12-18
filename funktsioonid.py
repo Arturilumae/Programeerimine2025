@@ -1,5 +1,5 @@
 """"
-Programm: funktsioonid main programmi jaoks
+Programm: abifunktsioonid main programmi jaoks
 Autorid: Artur Ilumäe ja Hannela Haavel
 
 Rohkem info main.py failis
@@ -11,13 +11,10 @@ import os
 
 
 def kirjuta_väljundisse(väljund, tekst): #gui kirjutamis funktsioon
-    # kontrollib kas self.väljund on tkinter.Text
-    if hasattr(väljund, 'insert') and callable(getattr(väljund, 'insert')):
+    if hasattr(väljund, 'insert') and callable(getattr(väljund, 'insert')): # kontrollib kas self.väljund on tkinter.Text
         väljund.insert('end', tekst)
         return
     
-
-
 def loe_aine_fail(aine):
     df = pd.read_excel("andmed.xlsx", sheet_name=aine, header=None)  # header=None, et saaks read indekseerida
     kõik_alampiirid, alampiir, kõik_max_punktid, max_punktid = [],[],[],[]
@@ -39,9 +36,8 @@ def loe_aine_fail(aine):
         max_punktid = dict(zip(df.iloc[j:, 0], df.iloc[j:, 2]))
         alampiir = {k: v for k, v in alampiir.items() if k == k}  # k==k on tõsi ainult kui k ei ole NaN
         max_punktid = {k: v for k, v in max_punktid.items() if k == k}
-        kõik_alampiirid.append(alampiir) #ühtemassiivi lisamine
-        kõik_max_punktid.append(max_punktid) #ühtemassiivi lisamine
-
+        kõik_alampiirid.append(alampiir)
+        kõik_max_punktid.append(max_punktid)
 
     # 12-17 rida, veerud f, g, h -> hinded ja punktid
     hinded = df.iloc[1:5, 5].tolist()     # veerg f
@@ -65,15 +61,13 @@ def loe_kohalikud_andmed(location="Desktop"):#<-- Muuda asukohta vastavalt vajad
         data = js.load(f)
     return data
 
-def valideeri_ja_salvesta_aine_punktid(aine, sisend_muutujad, salvestatud_andmed):
-    #Valideerib ja salvestab aine punktid. Tagastab (edukus, viga_sõnum, uuendatud_andmed)
+def valideeri_ja_salvesta(aine, sisend_muutujad, salvestatud_andmed): #Valideerib ja salvestab aine punktid.
     aine_punktid = {}
     for k, (muutuja, maks) in sisend_muutujad.items():
         tekst = muutuja.get().strip()
         if tekst == "":
             aine_punktid[k] = None
             continue
-        # analüüsi komadega eraldatud numbrid
         osad = [i.strip() for i in tekst.split(',') if i.strip() != ""]
         väärtused = []
         summa = 0
@@ -90,7 +84,7 @@ def valideeri_ja_salvesta_aine_punktid(aine, sisend_muutujad, salvestatud_andmed
                 kehtiv = False
                 break
         if not kehtiv or summa > maks:
-            return False, f"Kehtetud väärtused kategoorias {k} või summa ületab maksi ({maks}).", None
+            return False, f"Kehtetud väärtused kategoorias {k} või summa ületab maksimumi ({maks}).", None
         aine_punktid[k] = väärtused
     
     # salvesta salvestatud_andmete sisse
@@ -99,14 +93,14 @@ def valideeri_ja_salvesta_aine_punktid(aine, sisend_muutujad, salvestatud_andmed
     salvesta_kohalikult(salvestatud_andmed)
     return True, "Punktid salvestatud.", salvestatud_andmed
 
-def kuvamiseks_valmis_andmed(aine, salvestatud_andmed):
+def kuvamiseks_andmed(aine, salvestatud_andmed):
     #Ettevalmistab andmed kuvamiseks. Tagastab (edukas, tekst_väljund)
     if not salvestatud_andmed:
-        return False, "Salvestatud andmed puuduvad.\n"
+        return "Salvestatud andmed puuduvad.\n"
     
     aine_andmed = salvestatud_andmed.get(aine)
     if not aine_andmed:
-        return False, f"Salvestatud andmed ainele {aine} puuduvad.\n"
+        return f"Salvestatud andmed ainele {aine} puuduvad.\n"
     
     tekst = f"Aine: {aine}\n"
     if isinstance(aine_andmed, dict):
@@ -115,10 +109,9 @@ def kuvamiseks_valmis_andmed(aine, salvestatud_andmed):
     else:
         tekst += f"  {repr(aine_andmed)}\n"
     
-    return True, tekst
+    return tekst
 
-def arvuta_hinne_gui(punktid, alampiir, punktid_hindeks, hinded, väljund=None): # Lisada täielik hinnde arvutus
-    kirjuta_väljundisse(väljund, "Katse\n")
+def arvuta_hinne(punktid, alampiir, punktid_hindeks, hinded, väljund=None): # Lisada täielik hinnde arvutus
     kokku_punkte = 0
     läbitud = True
     läbikukkudud = {}
@@ -135,7 +128,7 @@ def arvuta_hinne_gui(punktid, alampiir, punktid_hindeks, hinded, väljund=None):
                 kokku_punkte += väärtus
                 punkti_kontroll += väärtus
 
-        # Kontrolli alampiire
+        # Kontrollib alampiire
         def alampiiri_plokk(ploki_indeks):
             try:
                 plokk = alampiir[ploki_indeks]
@@ -145,37 +138,35 @@ def arvuta_hinne_gui(punktid, alampiir, punktid_hindeks, hinded, väljund=None):
                 pass
             return None
 
-        # Single-block minimal check
+        # üks nõue
         nõue_üks = alampiiri_plokk(0)
         if nõue_üks is not None and len(alampiir) == 1:
                     if punkti_kontroll < nõue_üks:
                         läbitud = False
                         kirjuta_väljundisse(väljund, f"Kategoorias '{i}' ei ole saavutatud minimaalset punktide arvu, sull on {punkti_kontroll} vaja on {nõue_üks}.\n")
 
-        # Multi-block minimal checks
+        # mittu nõuet
         if len(alampiir) > 1:
             läbikukkudud.setdefault(i, [])
             for ploki_indeks in range(len(alampiir)):
                 nõue = alampiiri_plokk(ploki_indeks)
                 if nõue is None:
-                    # if no requirement for this block, treat as passed
                     läbikukkudud[i].append([None, True])
                     continue
                 if punkti_kontroll < nõue:
                     läbitud = False
                     läbikukkudud[i].append([nõue, False, punkti_kontroll])
+                    kirjuta_väljundisse(väljund, f"Kategoorias '{i}' ei ole saavutatud minimaalset punktide arvu, sull on {punkti_kontroll} vaja on {nõue}.\n")
                 else:
                     läbikukkudud[i].append([nõue, True])
                                     
     saadud_hinne = None
-    # Lihtsustatud versioon: arvuta hinne ainult kokku_punkte alusel
     if len(hinded) > 0 and len(punktid_hindeks) > 0:
         for indeks in range(len(punktid_hindeks)):
             if indeks < len(hinded):
                 if kokku_punkte >= punktid_hindeks[indeks]:
                     saadud_hinne = hinded[indeks]
                     break
-        # Kui hinne pole määratud, anna viimane hinne
         if saadud_hinne is None and len(hinded) > 0:
             saadud_hinne = hinded[-1]
     
