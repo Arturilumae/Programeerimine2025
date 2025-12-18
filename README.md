@@ -1,6 +1,6 @@
 # Programmi kirjeldus
-See programm arvutab ja analüüsib erinevate ainete hindu. Hetkel on programmi andmebaasis järgmised 5 ainet:
-1) Programeerimine 1
+See programm arvutab ja analüüsib erinevate ainete hindeid. Hetkel on programmi andmebaasis järgmised 5 ainet:
+1) Programmeerimine 1
 2) Arvuti arhitektuur ja riistvara 1
 3) Operatsioonisüsteemid
 4) Kõrgem matemaatika 1
